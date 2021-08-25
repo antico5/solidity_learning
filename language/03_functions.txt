@@ -1,0 +1,21 @@
+Function visibility:
+  public
+    can be called by eoa, contracts or the contract itself
+  external
+    cannot be called by the contract, except prefixing with this
+  internal
+    can only be called by the contract or inheritors
+  private
+    can only be called by the contract
+
+Function behavior:
+  constant or view
+    doesnt modify any state
+  pure
+    doesnt read or write state. operates only on arguments (functional)
+  payable
+    can accept payments. others will reject them (except selfdestruct and coinbase payments)
+
+Constructor
+  runs only once, when contract is created; runs in the same transaction
+  
