@@ -1,0 +1,13 @@
+call
+    - low-level contract function call
+    - returns boolean. check !
+    - no guarantee you are actually calling a contract address
+    - creates a new msg/context
+
+delegatecall
+    - low-level
+    - executes the given contract function without creating a new msg context
+    - it has access to caller's state and context (this == caller)
+
+libraries
+    - all function calls to libraries are delegatecalls

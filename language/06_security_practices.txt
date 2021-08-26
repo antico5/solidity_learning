@@ -1,0 +1,55 @@
+Defensive programming
+  minimalism: as less LOC as possible
+  code reuse: use libraries and dont duplicate your local code
+  code quality: deploying smart contract = launching rocket to space
+  readability/auditability
+  test coverage: aim for 100%
+
+Reentrancy
+  Vulnerability when a caller contract sends ether to unknown addresses.
+  A fallback function on the called contract can re-call the caller
+
+  How to deal with it:
+    1 - Use built-in transfer function instead of call
+    2 - dont be an idiot, first reduce the balance and then send the ether
+    3 - use a mutex
+
+Arithmetic
+  underflow: unsigned 0 - 1 = a lot
+  overflow = unsigned a lot + 1  = 0 ;  signed a lot + 1 = negative a lot
+
+  solution: use SafeMath from OpenZeppelin
+
+Unexpected ether
+  - arises when a contract makes the assumption that any ether received would pass through code (payable function)
+  - this is not the case. examples:
+    - selfdestruct receiver: a contract can send another contract ether, and this doesnt call any functions (not even fallback)
+    - pre-sent ether: address generation is deterministic (creator address + nonce). you can calculate, send ether, then deploy
+  Solution:
+    - dont have exact expectations on this.balance
+    - use a separate variable for received ether. this is not modified by forceful sends
+
+delegatecall
+  - it preserves the context and storage slots from the calling contract
+  - so the called contract can overwrite the caller's state
+  Measures:
+    - use the library keyword. forbids state and prevents self-destruct
+
+Default visibility
+  - functions are by default public, so double check
+
+Entropy Illusion
+  - difficulty to have randomness
+  - depending on future block variables has the miner tamper issue
+  approaches:
+    - for peer-to-peer bet, use commit-reveal technique with stake < block reward
+    - check ranDAO
+
+Referencing external contracts
+  - it is dangerous to pass addresses to external contacts in functions/contructor
+  - it is better to hardcode their addresses, or create a new instance by deploying it together with the caller contract
+
+Short address/parameter attack
+  - when interacting with contracts from outside, you have to form the ABI payload
+  - addresses are padded with 0 at the end if they are not 20 bytes
+  - then the ABI can be different than expected if you don't validate the address length externally
