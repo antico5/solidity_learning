@@ -1,4 +1,4 @@
-const { expect } = require("chai");
+import { expect } from "chai";
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { BigNumber, Contract } from 'ethers';
 import hre, {ethers} from 'hardhat'
@@ -37,7 +37,9 @@ describe("Faucet", function () {
         to: contract.address,
         value: depositAmt,
       });
-      return depositTx.wait();
+      await depositTx.wait();
+
+      return depositTx;
     }
 
     it("receives ether deposits", async function () {
@@ -52,13 +54,10 @@ describe("Faucet", function () {
     it("fires a Deposit event", async function () {
       let depositAmt = ethers.utils.parseEther('0.123');
   
-      await doDeposit()
+      const depositTx = await doDeposit()
 
-  
-      const depositEvents =  await contract.queryFilter(contract.filters.Deposit())
-      expect(
-        depositEvents.some(e => e.args?.from == signer.address && e.args?.amount.eq(depositAmt))
-      ).to.be.ok
+      await expect(depositTx).to.emit(contract, "Deposit")
+        .withArgs(signer.address, depositAmt)
     });
   })
 
@@ -78,37 +77,23 @@ describe("Faucet", function () {
   
       expect(contractNewBalance).to.equal(contractOldBalance.sub(validAmount))
       expect(signerNewBalance).to.equal(signerOldBalance.add(validAmount).sub(withdrawTx.gasPrice.mul(receipt.gasUsed)))
-  
-      const withdrawalEvents =  await contract.queryFilter(contract.filters.Withdrawal())
-      expect(
-        withdrawalEvents.some(e => e.args?.to == signer.address && e.args?.amount.eq(validAmount))
-      ).to.be.ok
-  
-      try {
-        const secondWithdrawTx = await contract.withdraw(invalidAmount)
-        await secondWithdrawTx.wait()
-      } catch (error) {
-        expect(error).to.match(/can only withdraw less than 0.1/)
-      }
+
+      await expect(withdrawTx).to.emit(contract, "Withdrawal")
+        .withArgs(signer.address, validAmount);
+
+      await expect(contract.withdraw(invalidAmount)).to.revertedWith("can only withdraw less than 0.1")
     });
 
     it("doesn't allow to withdraw more than 0.1 eth", async () => {
-      try {
-        const withdrawTx = await contract.withdraw(invalidAmount)
-        await withdrawTx.wait()
-      } catch (error) {
-        expect(error).to.match(/can only withdraw less than 0.1/)
-      }
+      await expect(contract.withdraw(invalidAmount)).to.revertedWith("can only withdraw less than 0.1")
     });
 
     it("fires a Withdrawal event", async () => {
       const withdrawTx = await contract.withdraw(validAmount)
       const receipt = await withdrawTx.wait()
-  
-      const withdrawalEvents =  await contract.queryFilter(contract.filters.Withdrawal())
-      expect(
-        withdrawalEvents.some(e => e.args?.to == signer.address && e.args?.amount.eq(validAmount))
-      ).to.be.ok
+
+      await expect(withdrawTx).to.emit(contract, "Withdrawal")
+        .withArgs(signer.address, validAmount);
     });
   })
 
@@ -117,17 +102,18 @@ describe("Faucet", function () {
       const killTx = await contract.kill()
       const receipt = await killTx.wait()
       expect(receipt).to.be.ok
+
+      const code = await ethers.provider.getCode(contract.address)
+
+      // check that contract selfdestructed
+      expect(code).to.equal("0x")
     })
 
     it("non owners cant destroy the contract", async () => {
       const nonOwner = (await ethers.getSigners())[1]
       contract = contract.connect(nonOwner)
-      try {
-        const killTx = await contract.kill()
-        await killTx.wait()
-      } catch (error) {
-        expect(error).to.match(/Only owner can perform this action/)      
-      }
+
+      await expect(contract.kill()).to.be.revertedWith("Only owner can perform this action")
     })
   })
 });
