@@ -45,15 +45,21 @@ describe("CrowdFunding", function () {
       expect(await contract.contributorsCount()).to.eq(2)
     });
 
+    it("emits Contributed event", async () => {
+      await expect(contract.contribute({value: 1000})).to
+        .emit(contract, 'Contributed')
+        .withArgs(signer.address, 1000)
+    });
+
     it("rejects if deadline is over", async () => {
       const hrep = hre as any;
-      await hre.timeAndMine.increaseTime("601")
+      await hre.timeAndMine.increaseTime("602")
 
-      expect(contract.contribute({value: 100000})).to.revertedWith('already finished')
+      await expect(contract.contribute({value: 100000})).to.revertedWith('already finished')
     });
 
     it("rejects if the deposit amount is too low", async () => {
-      expect(contract.contribute({value: 99})).to.revertedWith('minimum contribution')
+      await expect(contract.contribute({value: 99})).to.revertedWith('minimum contribution')
     });
   });
 
@@ -63,7 +69,7 @@ describe("CrowdFunding", function () {
       await contract.contribute({value: 500});
 
       // Pass deadline
-      await hre.timeAndMine.increaseTime("601")
+      await hre.timeAndMine.increaseTime("602")
 
       const oldBalance = await ethers.provider.getBalance(signer.address);
 
@@ -78,20 +84,32 @@ describe("CrowdFunding", function () {
       expect(await contract.contributorsCount()).to.eq(0)
     });
 
+    it("emits Refunded event", async () => {
+      await contract.contribute({value: 1000});
+      await contract.contribute({value: 500});
+
+      // Pass deadline
+      await hre.timeAndMine.increaseTime("602")
+
+      await expect(contract.getRefund()).to
+        .emit(contract, 'Refunded')
+        .withArgs(signer.address, 1500)
+    });
+
     it("fails if the crowdfund didnt finish", async () => {
       await contract.contribute({value: 1000});
 
       // Dont pass deadline
       await hre.timeAndMine.increaseTime("599")
 
-      expect(contract.getRefund()).to.revertedWith('')
+      await expect(contract.getRefund()).to.revertedWith('')
     });
 
     it("fails if the user is not a contributor", async () => {
       // Pass deadline
-      await hre.timeAndMine.increaseTime("601")
+      await hre.timeAndMine.increaseTime("602")
 
-      expect(contract.getRefund()).to.revertedWith('')
+      await expect(contract.getRefund()).to.revertedWith('')
     });
   });
 
@@ -108,7 +126,7 @@ describe("CrowdFunding", function () {
     });
 
     it("can be created only by the owner", async () => {
-      expect(contract.connect(otherSigner).createRequest('Test request', signer.address, 1000)).to.revertedWith('owner')
+      await expect(contract.connect(otherSigner).createRequest('Test request', signer.address, 1000)).to.revertedWith('owner')
     });
   });
 
@@ -135,12 +153,12 @@ describe("CrowdFunding", function () {
       });
 
       it("only allows contributors to vote", async () => {
-        expect(contract.connect(otherSigner).vote(0)).to.revertedWith('only contributors')
+        await expect(contract.connect(otherSigner).vote(0)).to.revertedWith('only contributors')
       });
 
       it("doesnt allow you to vote twice", async () => {
-        expect(contract.vote(0)).to.not.be.reverted;
-        expect(contract.vote(0)).to.be.revertedWith('already voted')
+        await expect(contract.vote(0)).to.not.be.reverted;
+        await expect(contract.vote(0)).to.be.revertedWith('already voted')
       });
 
       it("doenst allow you to vote if request was already executed", async () => {
@@ -150,34 +168,39 @@ describe("CrowdFunding", function () {
           }
         })
 
-        expect(contract.vote(0)).to.revertedWith('already been executed')
+        await expect(contract.vote(0)).to.revertedWith('already been executed')
       });
     });
 
     describe("when the campaign was not funded", function () {
       it("doesnt allow you to vote", async () => {
         await contract.contribute({value: 1000}); // user is contributor
-        expect(contract.vote(0)).to.be.revertedWith('didnt reach its goal')
+        await expect(contract.vote(0)).to.be.revertedWith('didnt reach its goal')
       });
     });
 
   });
 
   describe("makePayment", function () {
-    it("transfers eth to the request recipient", async () => {
+    let recipient: SignerWithAddress
+    const requestValue = ethers.utils.parseEther('1.5');
+    let requestId: BigNumber;
+
+    beforeEach(async () => {
       // contribute until goal is reached
       await contract.connect(signer).contribute({value: ethers.utils.parseEther('5')})
       await contract.connect(otherSigner).contribute({value: ethers.utils.parseEther('5')})
       await contract.connect(yetAnotherSigner).contribute({value: ethers.utils.parseEther('5')})
-
-      const recipient = (await ethers.getSigners())[3]
-      const recipientOldBalance = await ethers.provider.getBalance(recipient.address)
-
-      const requestValue = ethers.utils.parseEther('1.5');
+      
+      recipient = (await ethers.getSigners())[3]
       const tx = await contract.createRequest('Test request', recipient.address, requestValue) as TransactionResponse
       const receipt = await tx.wait()
+  
+      requestId = BigNumber.from(receipt.logs[0].topics[1]) // second value of first emmited event
+    });
 
-      const requestId = BigNumber.from(receipt.logs[0].topics[1]) // second value of first emmited event
+    it("transfers eth to the request recipient if there are enough votes", async () => {
+      const recipientOldBalance = await ethers.provider.getBalance(recipient.address)
 
       await contract.connect(signer).vote(requestId)
       await contract.connect(otherSigner).vote(requestId)
@@ -186,6 +209,10 @@ describe("CrowdFunding", function () {
       
       const recipientNewBalance =  await ethers.provider.getBalance(recipient.address)
       expect(recipientNewBalance.sub(recipientOldBalance)).to.eq(requestValue)
+      const request = await contract.requests(requestId)
+      expect(request.executed).to.eq(true)
+
+      await expect(contract.makePayment(requestId)).to.be.revertedWith('already been executed')
     });
 
     it("is only callable by owner", async () => {

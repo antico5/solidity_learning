@@ -25,6 +25,10 @@ contract CrowdFunding is Ownable {
   }
 
   event RequestCreated(uint indexed requestId, string description, address indexed recipient, uint value);
+  event Contributed(address indexed contributor, uint value);
+  event Voted(address indexed voter, uint indexed requestId);
+  event Executed(uint indexed requestId);
+  event Refunded(address indexed contributor, uint value);
 
   modifier onFailed() {
     require(block.timestamp > deadline && raisedAmount < goal);
@@ -63,6 +67,8 @@ contract CrowdFunding is Ownable {
 
     _addContribution(msg.value);
     raisedAmount += msg.value;
+
+    emit Contributed(msg.sender, msg.value);
   }
 
   function getRefund() public onlyContributors onFailed {
@@ -71,6 +77,8 @@ contract CrowdFunding is Ownable {
     raisedAmount -= refundAmount;
     contributorsCount--;
     payable(msg.sender).transfer(refundAmount);
+
+    emit Refunded(msg.sender, refundAmount);
   }
 
   receive() external payable {
@@ -112,6 +120,8 @@ contract CrowdFunding is Ownable {
 
     requests[requestId].voters[msg.sender] = true;
     requests[requestId].votersCount++;
+
+    emit Voted(msg.sender, requestId);
   }
 
   function didVote(uint256 requestId, address contributor) public view returns (bool) {
@@ -123,6 +133,9 @@ contract CrowdFunding is Ownable {
     require(request.votersCount >= contributorsCount/2, 'need more than half of contributors votes');
     require(address(this).balance >= request.value, 'not enough funds');
 
+    request.executed = true;
     payable(request.recipient).transfer(request.value);
+
+    emit Executed(requestId);
   }
 }
