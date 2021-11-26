@@ -1,0 +1,38 @@
+{
+  "env": {
+    "es2021": true,
+    "node": true
+  },
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:@typescript-eslint/eslint-recommended",
+    "plugin:@typescript-eslint/recommended-requiring-type-checking"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": 12,
+    "sourceType": "module",
+    "project": "./tsconfig.json"
+  },
+  "plugins": ["@typescript-eslint"],
+  "rules": {
+    "no-console": 1,
+    "max-len": ["warn", 120],
+    "indent": ["error", 2, { "SwitchCase": 1 }],
+    "quotes": ["error", "single"],
+    "object-curly-spacing": ["warn", "always"],
+    "space-in-parens": ["warn", "never"],
+    "array-bracket-spacing": ["warn", "never"],
+    "comma-dangle": ["warn", "always-multiline"],
+    "comma-spacing": ["warn", { "before": false, "after": true }],
+    "@typescript-eslint/restrict-template-expressions": "off",
+    "@typescript-eslint/no-unsafe-assignment": "off",
+    "@typescript-eslint/no-unsafe-call": "off",
+    "@typescript-eslint/no-misused-promises": "off",
+    "@typescript-eslint/unbound-method": "off",
+    "@typescript-eslint/no-unsafe-member-access": "off",
+    "@typescript-eslint/no-var-requires": "off",
+    "no-empty": "off"
+  }
+}
