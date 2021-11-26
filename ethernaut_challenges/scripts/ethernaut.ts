@@ -16,7 +16,6 @@ export const createLevelInstance = async (name: string, levelAddress: string, si
 
   const txReceipt = await txResponse.wait()
   console.log('Tx mined!')
-  console.log(JSON.stringify(txReceipt, null, 2))
   const instanceAddress = ethers.utils.hexZeroPad(ethers.utils.hexStripZeros(txReceipt.logs[0].data), 20)
   console.log('Level instance address', instanceAddress)
 
@@ -37,5 +36,18 @@ export const loadOrCreateLevelInstance = async (
     const contract = await createLevelInstance(name, levelAddress, signer)
     fs.writeFileSync(fileName, contract.address)
     return contract
+  }
+}
+
+export const submitLevelInstance = async (instanceAddress: string, signer: Signer): Promise<boolean> => {
+  const submitTx = await getEthernautContract(signer).submitLevelInstance(instanceAddress)
+  console.log(`Submitted level instance address ${instanceAddress}. Tx ID: ${submitTx.hash}`)
+  const receipt = await submitTx.wait()
+  if (receipt.logs.length) {
+    console.log('Submission ACCEPTED :)')
+    return true
+  } else {
+    console.log('Submission REJECTED :(')
+    return false
   }
 }

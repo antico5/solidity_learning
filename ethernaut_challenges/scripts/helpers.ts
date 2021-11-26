@@ -8,7 +8,9 @@ export const deployContract = async <ContractType extends Contract>(
   signer?: Signer,
 ): Promise<ContractType> => {
   console.log(`Deploying contract ${contractName} with args ${JSON.stringify(args)}`)
-  return (await (await ethers.getContractFactory(contractName, signer)).deploy(...args)) as ContractType
+  const contract = (await (await ethers.getContractFactory(contractName, signer)).deploy(...args)) as ContractType
+  console.log(`Deployed at address ${contract.address}`)
+  return contract
 }
 
 export const loadOrDeployContract = async (name: string, args: any[], signer: Signer): Promise<Contract> => {
@@ -19,7 +21,6 @@ export const loadOrDeployContract = async (name: string, args: any[], signer: Si
     return (await ethers.getContractFactory(name, signer)).attach(instanceAddress)
   } catch (error) {
     const contract = await deployContract(name, args, signer)
-    console.log(`Deployed to address ${contract.address}`)
     fs.writeFileSync(fileName, contract.address)
     return contract
   }

@@ -1,6 +1,6 @@
 pragma solidity ^0.6.0;
 
-import "./3_CoinFlip.sol";
+import "./03_CoinFlip.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 contract CoinFlipAttack {
