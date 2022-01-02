@@ -4,6 +4,7 @@ import { Contract } from "ethers";
 import { ethers } from "hardhat";
 import {
   Create2Factory,
+  TestContract,
   TestContractSpy,
   TestContract__factory,
 } from "../typechain";
@@ -38,6 +39,13 @@ describe("Create2Factory", function () {
       const deployEvent = receipt.events![0] as DeployedEvent;
 
       expect(deployEvent.args?.addr == precalculatedAddress);
+
+      const testContract = TestContract__factory.connect(
+        precalculatedAddress,
+        signer
+      );
+
+      expect(await testContract.owner()).to.eq(factoryContract.address);
     });
   });
 });
