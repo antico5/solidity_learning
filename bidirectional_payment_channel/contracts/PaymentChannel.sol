@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 contract PaymentChannel {
     using ECDSA for bytes32;
 
-    event ChallengedExit(address indexed sender, uint256 nonce);
+    event BalancesUpdated(address indexed sender, uint256 nonce);
     event Withdrawn(address indexed to, uint256 amount);
 
     address payable[2] public users;
@@ -14,7 +14,7 @@ contract PaymentChannel {
 
     mapping(address => uint256) public balances;
 
-    uint256 public immutable challengeTime;
+    uint256 public immutable lockTime;
     uint256 public expiresAt;
     uint256 public nonce;
 
@@ -27,13 +27,13 @@ contract PaymentChannel {
         address payable[2] memory _users,
         uint256[2] memory _balances,
         uint256 _expiresAt,
-        uint256 _challengeTime
+        uint256 _lockTime
     ) payable checkBalances(_balances) {
         require(_expiresAt > block.timestamp);
-        require(_challengeTime > 0);
+        require(_lockTime > 0);
 
         expiresAt = _expiresAt;
-        challengeTime = _challengeTime;
+        lockTime = _lockTime;
 
         for (uint256 i = 0; i < _users.length; i++) {
             address payable user = _users[i];
@@ -91,12 +91,12 @@ contract PaymentChannel {
         _;
     }
 
-    function challengeExit(
+    function updateBalances(
         uint256[2] memory _balances,
         uint256 _nonce,
         bytes[2] memory _signatures
     ) public onlyUser checkSignatures(_signatures, _balances, _nonce) checkBalances(_balances) {
-        require(block.timestamp < expiresAt, "challenge period expired");
+        require(block.timestamp < expiresAt, "lock period expired");
         require(_nonce > nonce, "nonce must be greater than the current nonce");
 
         for (uint256 i = 0; i < _balances.length; i++) {
@@ -104,13 +104,13 @@ contract PaymentChannel {
         }
 
         nonce = _nonce;
-        expiresAt = block.timestamp + challengeTime;
+        expiresAt = block.timestamp + lockTime;
 
-        emit ChallengedExit(msg.sender, nonce);
+        emit BalancesUpdated(msg.sender, nonce);
     }
 
     function withdraw() public onlyUser {
-        require(block.timestamp >= expiresAt, "Challenge period not expired yet");
+        require(block.timestamp >= expiresAt, "Lock period not expired yet");
 
         uint256 amount = balances[msg.sender];
         balances[msg.sender] = 0;
