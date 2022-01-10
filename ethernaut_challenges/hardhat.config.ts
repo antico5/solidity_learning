@@ -1,3 +1,4 @@
+import '@typechain/hardhat'
 import '@atixlabs/hardhat-time-n-mine'
 import '@atixlabs/hardhat-time-n-mine/dist/src/type-extensions'
 import '@nomiclabs/hardhat-waffle'
