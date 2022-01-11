@@ -1,4 +1,4 @@
-import { Contract, Signer } from 'ethers'
+import { Contract, Signer, PayableOverrides } from 'ethers'
 import fs from 'fs'
 import { ethers } from 'hardhat'
 
@@ -9,9 +9,14 @@ export const getEthernautContract = (signer: Signer) => {
   return new ethers.Contract(ethernautAddress, ethernautABI, signer as any)
 }
 
-export const createLevelInstance = async (name: string, levelAddress: string, signer: Signer): Promise<Contract> => {
+export const createLevelInstance = async (
+  name: string,
+  levelAddress: string,
+  signer: Signer,
+  overrides: PayableOverrides = {},
+): Promise<Contract> => {
   console.log(`Creating level instance for level address ${levelAddress} (${name})`)
-  const txResponse = await getEthernautContract(signer).createLevelInstance(levelAddress)
+  const txResponse = await getEthernautContract(signer).createLevelInstance(levelAddress, overrides)
   console.log('Create level instance Tx ID:', txResponse.hash)
 
   const txReceipt = await txResponse.wait()
@@ -27,6 +32,7 @@ export const loadOrCreateLevelInstance = async (
   name: string,
   levelAddress: string,
   signer: Signer,
+  overrides: PayableOverrides = {},
 ): Promise<Contract> => {
   const fileName = `/tmp/address_level_${name}`
   try {
@@ -34,7 +40,7 @@ export const loadOrCreateLevelInstance = async (
     console.log(`Using cached level instance ${name}:${instanceAddress} from ${fileName}`)
     return (await ethers.getContractFactory(name, signer)).attach(instanceAddress)
   } catch (error) {
-    const contract = await createLevelInstance(name, levelAddress, signer)
+    const contract = await createLevelInstance(name, levelAddress, signer, overrides)
     fs.writeFileSync(fileName, contract.address)
     return contract
   }
