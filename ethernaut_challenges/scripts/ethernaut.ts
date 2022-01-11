@@ -21,7 +21,6 @@ export const createLevelInstance = async (
 
   const txReceipt = await txResponse.wait()
   console.log('Tx mined!')
-  console.log(JSON.stringify(txReceipt, null, 2))
   const instanceAddress = ethers.utils.hexZeroPad(ethers.utils.hexStripZeros(txReceipt.logs[0].data), 20)
   console.log('Level instance address', instanceAddress)
 
