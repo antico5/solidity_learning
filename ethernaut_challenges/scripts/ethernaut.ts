@@ -1,6 +1,7 @@
 import { Contract, Signer, PayableOverrides } from 'ethers'
 import fs from 'fs'
 import { ethers } from 'hardhat'
+import _ from 'lodash'
 
 const ethernautAddress = '0xD991431D8b033ddCb84dAD257f4821E9d5b38C33'
 const ethernautABI = JSON.parse(fs.readFileSync('abis/ethernaut.json').toString())
@@ -21,7 +22,7 @@ export const createLevelInstance = async (
 
   const txReceipt = await txResponse.wait()
   console.log('Tx mined!')
-  const instanceAddress = ethers.utils.hexZeroPad(ethers.utils.hexStripZeros(txReceipt.logs[0].data), 20)
+  const instanceAddress = ethers.utils.hexZeroPad(ethers.utils.hexStripZeros(_.last(txReceipt.logs as any[]).data), 20)
   console.log('Level instance address', instanceAddress)
 
   return (await ethers.getContractFactory(name, signer)).attach(instanceAddress)
