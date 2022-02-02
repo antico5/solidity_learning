@@ -36,21 +36,11 @@ export default {
         },
       },
       {
-        version: '0.6.0',
-        settings: {
-          outputSelection: {
-            '*': {
-              '*': ['storageLayout'],
-            },
-          },
-        },
-      },
-      {
         version: '0.6.2',
         settings: {
           outputSelection: {
             '*': {
-              '*': ['storageLayout'],
+              '*': ['storageLayout', 'evm.bytecode.opcodes'],
             },
           },
         },

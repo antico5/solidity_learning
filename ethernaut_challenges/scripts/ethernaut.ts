@@ -47,7 +47,7 @@ export const loadOrCreateLevelInstance = async (
 }
 
 export const submitLevelInstance = async (instanceAddress: string, signer: Signer): Promise<boolean> => {
-  const submitTx = await getEthernautContract(signer).submitLevelInstance(instanceAddress)
+  const submitTx = await getEthernautContract(signer).submitLevelInstance(instanceAddress, {gasLimit: 1000000})
   console.log(`Submitted level instance address ${instanceAddress}. Tx ID: ${submitTx.hash}`)
   const receipt = await submitTx.wait()
   if (receipt.logs.length) {
