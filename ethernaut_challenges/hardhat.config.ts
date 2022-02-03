@@ -45,6 +45,16 @@ export default {
           },
         },
       },
+      {
+        version: '0.5.0',
+        settings: {
+          outputSelection: {
+            '*': {
+              '*': ['storageLayout', 'evm.bytecode.opcodes'],
+            },
+          },
+        },
+      },
     ],
   },
   networks: {
